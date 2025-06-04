@@ -1,7 +1,22 @@
 import plotly.graph_objects as go
 import numpy as np
 
-def create_building_collection_figure(l, w, h):
+def create_building_collection_figure(l, w, h, metric=True):
+    """Create a 3D figure of a building and its collection area.
+    Args:
+        l (float): Length of the building.
+        w (float): Width of the building.
+        h (float): Height of the building.
+        metric (bool): If True, use metric units; otherwise, use imperial units.
+    Returns:
+        plotly.graph_objects.Figure: A 3D figure of the building and collection area.
+    """
+    # Convert units if necessary, assume input is in feet
+    if metric:
+        l = l * 0.3048  # Convert feet to meters
+        w = w * 0.3048  # Convert feet to meters
+        h = h * 0.3048  # Convert feet to meters
+
     # Center the building's base on the origin
     x_offset = -l / 2
     y_offset = -w / 2
@@ -123,11 +138,21 @@ def create_building_collection_figure(l, w, h):
     ca_x_max = max(l + x_offset + buffer, l + x_offset)
     ca_y_min = min(y_offset - buffer, y_offset)
     ca_y_max = max(w + y_offset + buffer, w + y_offset)
+    
+    if metric:
+        xaxis_title = 'Length (m)'
+        yaxis_title = 'Width (m)'
+        zaxis_title = 'Height (m)'
+    else:
+        xaxis_title = 'Length (ft)'
+        yaxis_title = 'Width (ft)'
+        zaxis_title = 'Height (ft)'
+        
     fig.update_layout(
         scene=dict(
-            xaxis_title='Length (m)',
-            yaxis_title='Width (m)',
-            zaxis_title='Height (m)',
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            zaxis_title=zaxis_title,
             xaxis=dict(range=[ca_x_min, ca_x_max]),
             yaxis=dict(range=[ca_y_min, ca_y_max]),
             zaxis=dict(range=[0, h*2]),

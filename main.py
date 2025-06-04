@@ -34,18 +34,27 @@ with tabs[0]:
     # Input parameters
     st.markdown("### Input Parameters")    
 
-    cols = st.columns(3)
+    cols = st.columns(2, vertical_alignment="center")
     # Input parameters
     with cols[0]:
         l = st.number_input("Length of structure (ft)", min_value=1.0, value=20.0)
-    with cols[1]:
         w = st.number_input("Width of structure (ft)", min_value=1.0, value=10.0)
-    with cols[2]:
         h = st.number_input("Height of structure (ft)", min_value=1.0, value=5.0)
     # 3D Visualization of Building and Collection Area (Interactive)
-    st.markdown("### Interactive 3D Visualization of Building and Collection Area")
-    fig = create_building_collection_figure(l, w, h)
-    st.plotly_chart(fig)
+    with cols[1]:
+        st.markdown("### Interactive 3D Visualization of Building and Collection Area")
+        metric_fig_selection = st.radio(
+            "Select Units for Visualization",
+            ("Imperial (ft)", "Metric (m)"),
+            index=0,
+            horizontal=True
+        )
+        if metric_fig_selection == "Imperial (ft)":
+            metric_fig = False
+        else:
+            metric_fig = True
+        fig = create_building_collection_figure(l, w, h, metric=metric_fig)
+        st.plotly_chart(fig)
     # Display flash density map
     flash_ranges = {
         ">0 to 4": 2,
