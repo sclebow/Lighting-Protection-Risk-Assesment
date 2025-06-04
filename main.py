@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from figure_utils import create_building_collection_figure
 
 flash_density_map_url = "https://www.vaisala.com/sites/default/files/2020-09/Lightning/NLDN/LIFT-WEA-Lightning-NLDN-Map3-650x365.jpg"
 
@@ -41,6 +42,11 @@ with tabs[0]:
         w = st.number_input("Width of structure (ft)", min_value=1.0, value=10.0)
     with cols[2]:
         h = st.number_input("Height of structure (ft)", min_value=1.0, value=5.0)
+    # 3D Visualization of Building and Collection Area (Interactive)
+    st.markdown("### Interactive 3D Visualization of Building and Collection Area")
+    fig = create_building_collection_figure(l, w, h)
+    st.plotly_chart(fig)
+    # Display flash density map
     flash_ranges = {
         ">0 to 4": 2,
         "4 to 8": 6,
@@ -51,7 +57,6 @@ with tabs[0]:
         "24 to 28": 26,
         "28 and up": 28
     }
-    # Display flash density map
     st.image(flash_density_map_url, caption="Ground Flash Density Map", use_container_width=True)
     Ng = st.selectbox(
         "Ground flash density (flashes/sq miles/year)",
@@ -208,3 +213,4 @@ with tabs[0]:
     st.markdown("""
     **Note:** This is a simplified calculator for demonstration. For full compliance, refer to the latest NFPA 780 standard and use all required coefficients and factors.
     """)
+
