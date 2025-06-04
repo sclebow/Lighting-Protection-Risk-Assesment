@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from figure_utils import create_building_collection_figure
+from report_utils import generate_csv_report, generate_odt_report
 
 flash_density_map_url = "https://www.vaisala.com/sites/default/files/2020-09/Lightning/NLDN/LIFT-WEA-Lightning-NLDN-Map3-650x365.jpg"
 
@@ -274,6 +275,36 @@ with tabs[0]:
     st.markdown("""
     **Note:** This is the simplified assessment based on the NFPA 780 standard. For a detailed assessment, please refer to the detailed assessment tab.
     """)
+    # Prepare data for report
+    report_data = {
+        "Length (m)": l,
+        "Width (m)": w,
+        "Height (m)": h,
+        "Collection Area (m²)": A_D,
+        "Ground Flash Density (flashes/km²/year)": Ng_m2,
+        "Expected Annual Threat Occurrence (flashes/year)": N_D,
+        "Tolerable Lightning Frequency (flashes/year)": N_c,
+        "Construction Coefficient": C_2,
+        "Contents Coefficient": C_3,
+        "Occupancy Coefficient": C_4,
+        "Consequence Coefficient": C_5,
+        "Location Coefficient": C_D,
+        "LPS Recommendation": lps_recommendation,
+    }
+    csv_bytes = generate_csv_report(report_data)
+    odt_bytes = generate_odt_report(report_data)
+    st.download_button(
+        label="Download CSV Report",
+        data=csv_bytes,
+        file_name="lightning_risk_assessment.csv",
+        mime="text/csv"
+    )
+    st.download_button(
+        label="Download OpenDocument Report",
+        data=odt_bytes,
+        file_name="lightning_risk_assessment.odt",
+        mime="application/vnd.oasis.opendocument.text"
+    )
 
 with tabs[1]:
     st.subheader("Detailed Assessment")
