@@ -233,7 +233,8 @@ with tabs[0]:
         C_D = st.selectbox(
             "Relative Structure Location",
             list(structure_location_coefficients.keys()),
-            index=0
+            index=0,
+            key='location_key',
         )
         C_D = structure_location_coefficients[C_D]
     with cols[1]:
@@ -247,7 +248,8 @@ with tabs[0]:
         C_3 = st.selectbox(
             "Detmination of Structure Contents Coefficient",
             list(structure_contents_coefficients.keys()),
-            index=0
+            index=0,
+            key='contents_key',
         )
         C_3 = structure_contents_coefficients[C_3]
     cols = st.columns(2, vertical_alignment="center")
@@ -260,7 +262,8 @@ with tabs[0]:
         C_4 = st.selectbox(
             "Detmination of Structure Occupancy Coefficient",
             list(structure_occupancy_coefficients.keys()),
-            index=0
+            index=0,
+            key='occupancy_key',
         )
         C_4 = structure_occupancy_coefficients[C_4]
     with cols[1]:
@@ -272,7 +275,8 @@ with tabs[0]:
         C_5 = st.selectbox(
             "Detmination of Lightning Consequence Coefficient",
             list(lighting_consequence_coefficients.keys()),
-            index=0
+            index=0,
+            key='consequence_key',
         )
         C_5 = lighting_consequence_coefficients[C_5]
     
@@ -381,6 +385,13 @@ with tabs[0]:
     **Note:** This is the simplified assessment based on the NFPA 780 standard. For a detailed assessment, please refer to the detailed assessment tab.
     """)
     # Prepare data for report
+    # Save coefficient descriptions for report
+    construction_desc = f"{row_names[selected_row]} Structure - {col_names[selected_col]}"
+    contents_desc = C_3_desc = st.session_state.get('contents_key', list(structure_contents_coefficients.keys())[0])
+    occupancy_desc = C_4_desc = st.session_state.get('occupancy_key', list(structure_occupancy_coefficients.keys())[0])
+    consequence_desc = C_5_desc = st.session_state.get('consequence_key', list(lighting_consequence_coefficients.keys())[0])
+    location_desc = C_D_desc = st.session_state.get('location_key', list(structure_location_coefficients.keys())[0])
+
     report_data = {
         "Project Name": project_name,
         "Length (ft)": l,
@@ -391,10 +402,15 @@ with tabs[0]:
         "Expected Annual Threat Occurrence (flashes/year)": N_D,
         "Tolerable Lightning Frequency (flashes/year)": N_c,
         "Construction Coefficient": C_2,
+        "Construction Coefficient Description": construction_desc,
         "Contents Coefficient": C_3,
+        "Contents Coefficient Description": contents_desc,
         "Occupancy Coefficient": C_4,
+        "Occupancy Coefficient Description": occupancy_desc,
         "Consequence Coefficient": C_5,
+        "Consequence Coefficient Description": consequence_desc,
         "Location Coefficient": C_D,
+        "Location Coefficient Description": location_desc,
         "LPS Recommendation": lps_recommendation,
     }
     csv_bytes = generate_csv_report(report_data)

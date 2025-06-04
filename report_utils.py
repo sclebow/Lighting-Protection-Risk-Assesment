@@ -18,7 +18,7 @@ def generate_odt_report(data_dict, project_name=None):
     if project_name:
         doc.text.addElement(P(text=f'Project Name: {project_name}'))
     doc.text.addElement(P(text='This report summarizes the results of the simplified lightning risk assessment.'))
-    doc.text.addElement(H(outlinelevel=2, text='Input Parameters'))
+    doc.text.addElement(H(outlinelevel=2, text='Assessment Results'))
     table = Table()
     for k, v in data_dict.items():
         row = TableRow()
