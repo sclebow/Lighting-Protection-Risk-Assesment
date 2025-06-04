@@ -35,6 +35,7 @@ st.markdown("""
 This app calculates the risk of lightning strikes to a structure based on the NFPA 780 2026 simplified assessment method.
 """)
 
+project_name = st.text_input("Project Name", placeholder="Enter project name here")
 tabs = st.tabs(["Simplified Assessment", "Detailed Assessment"])
 with tabs[0]:
     st.subheader("Simplified Assessment")
@@ -277,6 +278,7 @@ with tabs[0]:
     """)
     # Prepare data for report
     report_data = {
+        "Project Name": project_name,
         "Length (m)": l,
         "Width (m)": w,
         "Height (m)": h,
