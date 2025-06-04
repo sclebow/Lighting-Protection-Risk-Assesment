@@ -230,6 +230,29 @@ with tabs[0]:
         lps_boolean = False
         lps_recommendation = "A Lightning Protection System (LPS) is recommended."
 
+    # Set page background color based on recommendation
+    if not lps_boolean:
+        st.markdown(
+            """
+            <style>
+            body, [data-testid="stAppViewContainer"] {
+                background-color: #fffbe6 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            """
+            <style>
+            body, [data-testid="stAppViewContainer"] {
+                background-color: #e6f0ff !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
     st.header("Results")
     st.write(f"**Collection Area:** {A_D:.2f} m²")
     st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l, w, h, l, w, h, A_D))
