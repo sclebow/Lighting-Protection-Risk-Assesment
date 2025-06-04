@@ -10,7 +10,21 @@ st.set_page_config(
     page_title="NFPA 780 Lightning Risk Assessment",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items=None,
+)
+
+# Custom CSS to move sidebar to the right and reduce LaTeX font size
+st.markdown(
+    """
+    <style>
+    /* Reduce LaTeX font size in sidebar */
+    [data-testid="stSidebar"] .katex-html {
+        font-size: 0.85em !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 st.title("NFPA 780 Lightning Risk Assessment Calculator")
@@ -20,7 +34,6 @@ This app calculates the risk of lightning strikes to a structure based on the NF
 """)
 
 tabs = st.tabs(["Simplified Assessment", "Detailed Assessment"])
-
 with tabs[0]:
     st.subheader("Simplified Assessment")
 
@@ -33,16 +46,15 @@ with tabs[0]:
 
     # Input parameters
     st.markdown("### Input Parameters")    
-
+    
+    st.markdown("---")
+    st.markdown("#### Structure Dimensions")
     cols = st.columns(2, vertical_alignment="center")
     # Input parameters
     with cols[0]:
         l = st.number_input("Length of structure (ft)", min_value=1.0, value=20.0)
         w = st.number_input("Width of structure (ft)", min_value=1.0, value=10.0)
         h = st.number_input("Height of structure (ft)", min_value=1.0, value=5.0)
-    # 3D Visualization of Building and Collection Area (Interactive)
-    with cols[1]:
-        st.markdown("### Interactive 3D Visualization of Building and Collection Area")
         metric_fig_selection = st.radio(
             "Select Units for Visualization",
             ("Imperial (ft)", "Metric (m)"),
@@ -53,8 +65,16 @@ with tabs[0]:
             metric_fig = False
         else:
             metric_fig = True
+    # 3D Visualization of Building and Collection Area (Interactive)
+    with cols[1]:
+        st.markdown("### Interactive 3D Visualization of Building and Collection Area")
         fig = create_building_collection_figure(l, w, h, metric=metric_fig)
         st.plotly_chart(fig)
+
+    st.markdown("---")
+    
+    st.markdown("#### Ground Flash Density")
+
     # Display flash density map
     flash_ranges = {
         ">0 to 4": 2,
@@ -66,25 +86,18 @@ with tabs[0]:
         "24 to 28": 26,
         "28 and up": 28
     }
-    st.image(flash_density_map_url, caption="Ground Flash Density Map", use_container_width=True)
-    Ng = st.selectbox(
-        "Ground flash density (flashes/sq miles/year)",
-        flash_ranges,
-        index=0
-    )
-    structure_location_coefficients = {
-        f"Structure surrounded by taller structures or trees within a distance of 3H ({3 * h}m)": 0.25,
-        f"Structure surrounded by structures of equal or lesser height within a distance of 3H ({3 * h}m)": 0.5,
-        f"Isolated structure, with no other structures located within a distance of 3H ({3 * h}m)": 1.0,
-        "Isolated structure on hilltop": 2.0
-    }
-    C_D = st.selectbox(
-        "Relative Structure Location",
-        list(structure_location_coefficients.keys()),
-        index=0
-    )
-    C_D = structure_location_coefficients[C_D]
+    cols = st.columns(2)
+    with cols[0]:
+        st.image(flash_density_map_url, caption="Ground Flash Density Map", use_container_width=True)
+    with cols[1]:
+        Ng = st.selectbox(
+            "Ground flash density (flashes/sq miles/year)",
+            flash_ranges,
+            index=0
+        )
 
+    st.markdown("---")
+    st.markdown("#### Structure Construction Coefficient")
     # 3x3 grid input with unique selection
     row_names = ["Metal", "Nonmetallic", "Combustible"]
     col_names = ["Metal Roof", "Nonmmetallic Roof", "Combustible Roof"]
@@ -104,7 +117,7 @@ with tabs[0]:
     def select_cell(i, j):
         st.session_state.selected_cell = (i, j)
 
-    st.markdown("#### Determination of Construction Coefficient, Select a cell from the grid:")
+    st.markdown("##### Select a cell from the grid:")
     cols = st.columns([0.2, 0.2, 0.2, 0.2])  # extra col for row names
 
     # Header row
@@ -132,43 +145,61 @@ with tabs[0]:
     st.write(f"Selected cell: **{row_names[selected_row]} Structure - {col_names[selected_col]} - {values[selected_row][selected_col]}**")
     C_2 = values[selected_row][selected_col]
 
-    structure_contents_coefficients = {
-        "Low value and noncombustible": 0.5,
-        "Standard value and noncombustible": 1.0,
-        "High value, moderate combustibility": 2.0,
-        "Exceptional value, flammable liquids, computer or electronics": 3.0,
-        "Exceptional value, irreplaceable cultural items": 4.0
-    }
-    C_3 = st.selectbox(
-        "Detmination of Structure Contents Coefficient",
-        list(structure_contents_coefficients.keys()),
-        index=0
-    )
-    C_3 = structure_contents_coefficients[C_3]
-    
-    structure_occupancy_coefficients = {
-        "Unoccupied": 0.5,
-        "Normally Occupied": 1.0,
-        "Difficult to Evacuate or risk of panic": 3.0,
-    }
-    C_4 = st.selectbox(
-        "Detmination of Structure Occupancy Coefficient",
-        list(structure_occupancy_coefficients.keys()),
-        index=0
-    )
-    C_4 = structure_occupancy_coefficients[C_4]
-
-    lighting_consequence_coefficients = {
-        "Continuation of facility services not required, no environmental impact": 1.0,
-        "Continuation of facility services required, no environmental impact": 5.0,
-        "Consequences to the environment": 10.0,
-    }
-    C_5 = st.selectbox(
-        "Detmination of Lightning Consequence Coefficient",
-        list(lighting_consequence_coefficients.keys()),
-        index=0
-    )
-    C_5 = lighting_consequence_coefficients[C_5]
+    st.markdown("---")
+    st.markdown("#### Structure Location, Contents, Occupancy, and Lightning Consequence Coefficients")
+    cols = st.columns(2, vertical_alignment="center")
+    with cols[0]:
+        structure_location_coefficients = {
+            f"Structure surrounded by taller structures or trees within a distance of 3H ({3 * h}m)": 0.25,
+            f"Structure surrounded by structures of equal or lesser height within a distance of 3H ({3 * h}m)": 0.5,
+            f"Isolated structure, with no other structures located within a distance of 3H ({3 * h}m)": 1.0,
+            "Isolated structure on hilltop": 2.0
+        }
+        C_D = st.selectbox(
+            "Relative Structure Location",
+            list(structure_location_coefficients.keys()),
+            index=0
+        )
+        C_D = structure_location_coefficients[C_D]
+    with cols[1]:
+        structure_contents_coefficients = {
+            "Low value and noncombustible": 0.5,
+            "Standard value and noncombustible": 1.0,
+            "High value, moderate combustibility": 2.0,
+            "Exceptional value, flammable liquids, computer or electronics": 3.0,
+            "Exceptional value, irreplaceable cultural items": 4.0
+        }
+        C_3 = st.selectbox(
+            "Detmination of Structure Contents Coefficient",
+            list(structure_contents_coefficients.keys()),
+            index=0
+        )
+        C_3 = structure_contents_coefficients[C_3]
+    cols = st.columns(2, vertical_alignment="center")
+    with cols[0]:
+        structure_occupancy_coefficients = {
+            "Unoccupied": 0.5,
+            "Normally Occupied": 1.0,
+            "Difficult to Evacuate or risk of panic": 3.0,
+        }
+        C_4 = st.selectbox(
+            "Detmination of Structure Occupancy Coefficient",
+            list(structure_occupancy_coefficients.keys()),
+            index=0
+        )
+        C_4 = structure_occupancy_coefficients[C_4]
+    with cols[1]:
+        lighting_consequence_coefficients = {
+            "Continuation of facility services not required, no environmental impact": 1.0,
+            "Continuation of facility services required, no environmental impact": 5.0,
+            "Consequences to the environment": 10.0,
+        }
+        C_5 = st.selectbox(
+            "Detmination of Lightning Consequence Coefficient",
+            list(lighting_consequence_coefficients.keys()),
+            index=0
+        )
+        C_5 = lighting_consequence_coefficients[C_5]
 
     # Convert imperial units to metric
     l = l * 0.3048  # feet to meters
@@ -199,26 +230,17 @@ with tabs[0]:
         lps_boolean = False
         lps_recommendation = "A Lightning Protection System (LPS) is recommended."
 
-    st.markdown("---")
-
-    st.subheader("Results")
+    st.header("Results")
     st.write(f"**Collection Area:** {A_D:.2f} m²")
-    st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = {:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 = {:.2f} \, \text{{m}}^2".format(l, w, h, l, w, h, A_D))
-
+    st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l, w, h, l, w, h, A_D))
     st.write(f"**Ground Flash Density:** {Ng_m2:.2f} flashes/km²/year")
-    st.latex(r"N_g = N_{{g,mi^2}} \times 0.386102 = {:.2f} \times 0.386102 = {:.2f}".format(Ng, Ng_m2))
-
+    st.latex(r"N_g = N_{{g,mi^2}} \times 0.386102 =\\ {:.2f} \times 0.386102 = {:.2f}".format(Ng, Ng_m2))
     st.write(f"**Expected Annual Threat Occurrence:** {N_D:.2e} flashes/year")
-    st.latex(r"N_D = N_g \times A \times C_D \times 10^{{-6}} = {:.2f} \times {:.2f} \times {:.2f} \times 10^{{-6}} = {:.6f}".format(Ng_m2, A_D, C_D, N_D))
-
+    st.latex(r"N_D = N_g \times A \times C_D \times 10^{{-6}} =\\ {:.2f} \times {:.2f} \times {:.2f} \times 10^{{-6}} = {:.6f}".format(Ng_m2, A_D, C_D, N_D))
     st.write(f"**Tolerable Lightning Frequency:** {N_c:.2e} flashes/year")
-    st.latex(r"N_c = \frac{{1.5 \times 10^{{-6}}}}{{C}} = \frac{{1.5 \times 10^{{-6}}}}{{{:.2f}}} = {:.6f}".format(C, N_c))
-
-    st.markdown("---")
-
-    st.markdown(f" ## Lightning Protection System Recommendation")
+    st.latex(r"N_c = \frac{{1.5 \times 10^{{-6}}}}{{C}} =\\ \frac{{1.5 \times 10^{{-6}}}}{{{:.2f}}} = {:.6f}".format(C, N_c))
+    st.markdown(f"## Lightning Protection System Recommendation")
     st.write(lps_recommendation)
-
     st.markdown("""
     **Note:** This is a simplified calculator for demonstration. For full compliance, refer to the latest NFPA 780 standard and use all required coefficients and factors.
     """)
