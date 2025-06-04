@@ -9,7 +9,7 @@ def create_building_collection_figure(l, w, h, metric=True):
         h (float): Height of the building.
         metric (bool): If True, use metric units; otherwise, use imperial units.
     Returns:
-        plotly.graph_objects.Figure: A 3D figure of the building and collection area.
+        plotly.graph_objects.Figure: A 3D figure of the building and its collection area.
     """
     # Convert units if necessary, assume input is in feet
     if metric:
@@ -138,7 +138,12 @@ def create_building_collection_figure(l, w, h, metric=True):
     ca_x_max = max(l + x_offset + buffer, l + x_offset)
     ca_y_min = min(y_offset - buffer, y_offset)
     ca_y_max = max(w + y_offset + buffer, w + y_offset)
-    
+
+    # Set all axes to the same scale, z only positive
+    x_range = ca_x_min, ca_x_max
+    y_range = ca_y_min, ca_y_max
+    z_range = (0, max(ca_x_max - ca_x_min, ca_y_max - ca_y_min))
+
     if metric:
         xaxis_title = 'Length (m)'
         yaxis_title = 'Width (m)'
@@ -147,15 +152,19 @@ def create_building_collection_figure(l, w, h, metric=True):
         xaxis_title = 'Length (ft)'
         yaxis_title = 'Width (ft)'
         zaxis_title = 'Height (ft)'
-        
+
     fig.update_layout(
         scene=dict(
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
             zaxis_title=zaxis_title,
-            xaxis=dict(range=[ca_x_min, ca_x_max]),
-            yaxis=dict(range=[ca_y_min, ca_y_max]),
-            zaxis=dict(range=[0, h*2]),
+            xaxis=dict(range=list(x_range)),
+            yaxis=dict(range=list(y_range)),
+            zaxis=dict(range=list(z_range)),
+            aspectmode='cube',
+            camera=dict(
+                eye=dict(x=1.5, y=1.5, z=1.2)  # Zoomed out a bit more
+            ),
         ),
         title='Interactive 3D Model: Building and Collection Area',
         margin=dict(l=0, r=0, b=0, t=30)
