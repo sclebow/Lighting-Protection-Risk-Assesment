@@ -47,6 +47,69 @@ with tabs[0]:
 
     st.markdown("---")
 
+    uploaded_files = st.file_uploader(
+        "Upload Project Data (optional)",
+        type=["csv"],
+        help="You can upload a CSV file with project data to pre-fill the input parameters. The file should have columns: 'Length', 'Width', 'Height', 'Ground Flash Density', 'Construction Coefficient', 'Contents Coefficient', 'Occupancy Coefficient', 'Consequence Coefficient'."
+    )
+    if uploaded_files:
+        import pandas as pd
+        # Read the uploaded CSV file
+        df = pd.read_csv(uploaded_files)
+        # Check if the required columns are present
+        required_columns = [
+            "Project Name",
+            "Length (ft)",
+            "Width (ft)",
+            "Height (ft)",
+            "Collection Area (m²)",
+            "Ground Flash Density (flashes/sq miles/year)",
+            "Expected Annual Threat Occurrence (flashes/year)",
+            "Tolerable Lightning Frequency (flashes/year)",
+            "Construction Coefficient",
+            "Contents Coefficient",
+            "Occupancy Coefficient",
+            "Consequence Coefficient",
+            "Location Coefficient",
+            "LPS Recommendation",
+        ]
+
+        if all(col in df.columns for col in required_columns):
+            # Pre-fill the input parameters with the first row of the DataFrame
+            project_name = df.iloc[0]["Project Name"]
+            l = float(df.iloc[0]["Length (ft)"])
+            w = float(df.iloc[0]["Width (ft)"])
+            h = float(df.iloc[0]["Height (ft)"])
+            Ng = df.iloc[0]["Ground Flash Density (flashes/sq miles/year)"]
+            C_2 = df.iloc[0]["Construction Coefficient"]
+            C_3 = df.iloc[0]["Contents Coefficient"]
+            C_4 = df.iloc[0]["Occupancy Coefficient"]
+            C_5 = df.iloc[0]["Consequence Coefficient"]
+            C_D = df.iloc[0]["Location Coefficient"]
+            
+            st.success("Project data loaded successfully!")
+        else:
+            st.error("Uploaded CSV file does not contain the required columns. Please check the file format.")
+            # Set default values if the file is not valid
+            l = 20.0
+            w = 10.0
+            h = 10.0
+            Ng = ">0 to 4"
+            C_2 = 1.0
+            C_3 = 1.0
+            C_4 = 1.0
+            C_5 = 1.0
+    else:
+        # Default values for input parameters
+        l = 20.0
+        w = 10.0
+        h = 10.0
+        Ng = ">0 to 4"  # Default ground flash density
+        C_2 = 1.0  # Default construction coefficient
+        C_3 = 1.0
+        C_4 = 1.0  # Default occupancy coefficient
+        C_5 = 1.0
+
     # Input parameters
     st.markdown("### Input Parameters")    
     
@@ -55,9 +118,9 @@ with tabs[0]:
     cols = st.columns(2, vertical_alignment="center")
     # Input parameters
     with cols[0]:
-        l = st.number_input("Length of structure (ft)", min_value=1.0, value=20.0)
-        w = st.number_input("Width of structure (ft)", min_value=1.0, value=10.0)
-        h = st.number_input("Height of structure (ft)", min_value=1.0, value=5.0)
+        l = st.number_input("Length of structure (ft)", min_value=1.0, value=l)
+        w = st.number_input("Width of structure (ft)", min_value=1.0, value=w)
+        h = st.number_input("Height of structure (ft)", min_value=1.0, value=h)
         metric_fig_selection = st.radio(
             "Select Units for Visualization",
             ("Imperial (ft)", "Metric (m)"),
@@ -205,15 +268,15 @@ with tabs[0]:
         C_5 = lighting_consequence_coefficients[C_5]
 
     # Convert imperial units to metric
-    l = l * 0.3048  # feet to meters
-    w = w * 0.3048  # feet to meters
-    h = h * 0.3048  # feet to meters
+    l_m = l * 0.3048  # feet to meters
+    w_m = w * 0.3048  # feet to meters
+    h_m = h * 0.3048  # feet to meters
     
     Ng = flash_ranges[Ng]  # Convert selected range to numeric value
     Ng_m2 = Ng * 0.386102  # Convert flashes/sq miles/year to flashes/sq km/year
     
     # Calculate the collection area (A) in m²
-    A_D = l * w + 6 * h * (l + w) + 9 * math.pi * h * h  # Collection area in m²
+    A_D = l_m * w_m + 6 * h_m * (l_m + w_m) + 9 * math.pi * h_m * h_m # Collection area in m²
 
     # Calculate the expected annual threat occurrence (N_D)
     N_D = Ng_m2 * A_D * C_D * 10**-6
@@ -261,7 +324,7 @@ with tabs[0]:
 
     st.header("Results")
     st.write(f"**Collection Area:** {A_D:.2f} m²")
-    st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l, w, h, l, w, h, A_D))
+    st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l_m, w_m, h_m, l_m, w_m, h_m, A_D))
     st.write(f"**Ground Flash Density:** {Ng_m2:.2f} flashes/km²/year")
     st.latex(r"N_g = N_{{g,mi^2}} \times 0.386102 =\\ {:.2f} \times 0.386102 = {:.2f}".format(Ng, Ng_m2))
     st.write(f"**Expected Annual Threat Occurrence:** {N_D:.2e} flashes/year")
@@ -279,11 +342,11 @@ with tabs[0]:
     # Prepare data for report
     report_data = {
         "Project Name": project_name,
-        "Length (m)": l,
-        "Width (m)": w,
-        "Height (m)": h,
+        "Length (ft)": l,
+        "Width (ft)": w,
+        "Height (ft)": h,
         "Collection Area (m²)": A_D,
-        "Ground Flash Density (flashes/km²/year)": Ng_m2,
+        "Ground Flash Density (flashes/sq miles/year)": Ng,
         "Expected Annual Threat Occurrence (flashes/year)": N_D,
         "Tolerable Lightning Frequency (flashes/year)": N_c,
         "Construction Coefficient": C_2,
