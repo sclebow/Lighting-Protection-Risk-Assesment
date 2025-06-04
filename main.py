@@ -1,0 +1,210 @@
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+flash_density_map_url = "https://www.vaisala.com/sites/default/files/2020-09/Lightning/NLDN/LIFT-WEA-Lightning-NLDN-Map3-650x365.jpg"
+
+st.set_page_config(
+    page_title="NFPA 780 Lightning Risk Assessment",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+st.title("NFPA 780 Lightning Risk Assessment Calculator")
+
+st.markdown("""
+This app calculates the risk of lightning strikes to a structure based on the NFPA 780 standard.
+""")
+
+tabs = st.tabs(["Simplified Assessment", "Detailed Assessment"])
+
+with tabs[0]:
+    st.subheader("Simplified Assessment")
+
+    st.markdown("""
+    This section provides a simplified assessment of lightning risk based on basic parameters.
+    It is suitable for quick evaluations and does not cover all aspects of the NFPA 780 standard.
+    """)
+
+    st.markdown("---")
+
+    # Input parameters
+    st.markdown("### Input Parameters")    
+
+    cols = st.columns(3)
+    # Input parameters
+    with cols[0]:
+        l = st.number_input("Length of structure (ft)", min_value=1.0, value=20.0)
+    with cols[1]:
+        w = st.number_input("Width of structure (ft)", min_value=1.0, value=10.0)
+    with cols[2]:
+        h = st.number_input("Height of structure (ft)", min_value=1.0, value=5.0)
+    flash_ranges = {
+        ">0 to 4": 2,
+        "4 to 8": 6,
+        "8 to 12": 10,
+        "12 to 16": 14,
+        "16 to 20": 18,
+        "20 to 24": 22,
+        "24 to 28": 26,
+        "28 and up": 28
+    }
+    # Display flash density map
+    st.image(flash_density_map_url, caption="Ground Flash Density Map", use_container_width=True)
+    Ng = st.selectbox(
+        "Ground flash density (flashes/sq miles/year)",
+        flash_ranges,
+        index=0
+    )
+    structure_location_coefficients = {
+        f"Structure surrounded by taller structures or trees within a distance of 3H ({3 * h}m)": 0.25,
+        f"Structure surrounded by structures of equal or lesser height within a distance of 3H ({3 * h}m)": 0.5,
+        f"Isolated structure, with no other structures located within a distance of 3H ({3 * h}m)": 1.0,
+        "Isolated structure on hilltop": 2.0
+    }
+    C_D = st.selectbox(
+        "Relative Structure Location",
+        list(structure_location_coefficients.keys()),
+        index=0
+    )
+    C_D = structure_location_coefficients[C_D]
+
+    # 3x3 grid input with unique selection
+    row_names = ["Metal", "Nonmetallic", "Combustible"]
+    col_names = ["Metal Roof", "Nonmmetallic Roof", "Combustible Roof"]
+    values = [
+        [0.5, 1.0, 2.0], # Metal Structure
+        [1.0, 1.0, 2.5], # Nonmetallic Structure
+        [2.0, 2.5, 3.0]  # Combustible Structure
+    ]
+
+    # Create a unique key for each cell
+    cell_keys = [[f"cell_{i}_{j}" for j in range(3)] for i in range(3)]
+
+    # Use session state to track the selected cell
+    if "selected_cell" not in st.session_state:
+        st.session_state.selected_cell = (0, 0)
+
+    def select_cell(i, j):
+        st.session_state.selected_cell = (i, j)
+
+    st.markdown("#### Determination of Construction Coefficient, Select a cell from the grid:")
+    cols = st.columns([0.2, 0.2, 0.2, 0.2])  # extra col for row names
+
+    # Header row
+    cols[0].markdown("**Structure**")
+    for j, col_name in enumerate(col_names):
+        cols[j+1].markdown(f"**{col_name}**")
+
+    for i, row_name in enumerate(row_names):
+        cols = st.columns([0.2, 0.2, 0.2, 0.2])
+        cols[0].markdown(f"**{row_name}**")
+        for j in range(3):
+            is_selected = (st.session_state.selected_cell == (i, j))
+            button_label = f"{values[i][j]}"
+            cols[j+1].button(
+                button_label, 
+                key=cell_keys[i][j], 
+                help=f"{row_name} Structure - {col_names[j]}", 
+                type="primary" if is_selected else "secondary",
+                on_click=select_cell,
+                args=(i, j)
+            )
+
+    selected_row, selected_col = st.session_state.selected_cell
+
+    st.write(f"Selected cell: **{row_names[selected_row]} Structure - {col_names[selected_col]} - {values[selected_row][selected_col]}**")
+    C_2 = values[selected_row][selected_col]
+
+    structure_contents_coefficients = {
+        "Low value and noncombustible": 0.5,
+        "Standard value and noncombustible": 1.0,
+        "High value, moderate combustibility": 2.0,
+        "Exceptional value, flammable liquids, computer or electronics": 3.0,
+        "Exceptional value, irreplaceable cultural items": 4.0
+    }
+    C_3 = st.selectbox(
+        "Detmination of Structure Contents Coefficient",
+        list(structure_contents_coefficients.keys()),
+        index=0
+    )
+    C_3 = structure_contents_coefficients[C_3]
+    
+    structure_occupancy_coefficients = {
+        "Unoccupied": 0.5,
+        "Normally Occupied": 1.0,
+        "Difficult to Evacuate or risk of panic": 3.0,
+    }
+    C_4 = st.selectbox(
+        "Detmination of Structure Occupancy Coefficient",
+        list(structure_occupancy_coefficients.keys()),
+        index=0
+    )
+    C_4 = structure_occupancy_coefficients[C_4]
+
+    lighting_consequence_coefficients = {
+        "Continuation of facility services not required, no environmental impact": 1.0,
+        "Continuation of facility services required, no environmental impact": 5.0,
+        "Consequences to the environment": 10.0,
+    }
+    C_5 = st.selectbox(
+        "Detmination of Lightning Consequence Coefficient",
+        list(lighting_consequence_coefficients.keys()),
+        index=0
+    )
+    C_5 = lighting_consequence_coefficients[C_5]
+
+    # Convert imperial units to metric
+    l = l * 0.3048  # feet to meters
+    w = w * 0.3048  # feet to meters
+    h = h * 0.3048  # feet to meters
+    
+    Ng = flash_ranges[Ng]  # Convert selected range to numeric value
+    Ng_m2 = Ng * 0.386102  # Convert flashes/sq miles/year to flashes/sq km/year
+    
+    # Calculate the collection area (A) in m²
+    A_D = l * w + 6 * h * (l + w) + 9 * math.pi * h * h  # Collection area in m²
+
+    # Calculate the expected annual threat occurrence (N_D)
+    N_D = Ng_m2 * A_D * C_D * 10**-6
+
+    # Calculate the combined coefficient (C)
+    C = C_2 * C_3 * C_4 * C_5
+    
+    # Calculate the tolerable lightning frequency (N_c)
+    N_c = 1.5 * 10**-6 / C
+
+    # If N_D <= N_c, a Lightning Protection System (LPS) is optional
+    # If N_D > N_c, an LPS is recommended
+    if N_D <= N_c:
+        lps_boolean = True
+        lps_recommendation = "A Lightning Protection System (LPS) is optional."
+    else:
+        lps_boolean = False
+        lps_recommendation = "A Lightning Protection System (LPS) is recommended."
+
+    st.markdown("---")
+
+    st.subheader("Results")
+    st.write(f"**Collection Area:** {A_D:.2f} m²")
+    st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = {:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 = {:.2f} \, \text{{m}}^2".format(l, w, h, l, w, h, A_D))
+
+    st.write(f"**Ground Flash Density:** {Ng_m2:.2f} flashes/km²/year")
+    st.latex(r"N_g = N_{{g,mi^2}} \times 0.386102 = {:.2f} \times 0.386102 = {:.2f}".format(Ng, Ng_m2))
+
+    st.write(f"**Expected Annual Threat Occurrence:** {N_D:.2e} flashes/year")
+    st.latex(r"N_D = N_g \times A \times C_D \times 10^{{-6}} = {:.2f} \times {:.2f} \times {:.2f} \times 10^{{-6}} = {:.6f}".format(Ng_m2, A_D, C_D, N_D))
+
+    st.write(f"**Tolerable Lightning Frequency:** {N_c:.2e} flashes/year")
+    st.latex(r"N_c = \frac{{1.5 \times 10^{{-6}}}}{{C}} = \frac{{1.5 \times 10^{{-6}}}}{{{:.2f}}} = {:.6f}".format(C, N_c))
+
+    st.markdown("---")
+
+    st.markdown(f" ## Lightning Protection System Recommendation")
+    st.write(lps_recommendation)
+
+    st.markdown("""
+    **Note:** This is a simplified calculator for demonstration. For full compliance, refer to the latest NFPA 780 standard and use all required coefficients and factors.
+    """)
