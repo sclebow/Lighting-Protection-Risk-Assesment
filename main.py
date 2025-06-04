@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import math
 from figure_utils import create_building_collection_figure
 from report_utils import generate_csv_report, generate_odt_report
+import pandas as pd
 
 flash_density_map_url = "https://www.vaisala.com/sites/default/files/2020-09/Lightning/NLDN/LIFT-WEA-Lightning-NLDN-Map3-650x365.jpg"
 
@@ -46,14 +47,13 @@ with tabs[0]:
     """)
 
     st.markdown("---")
-
+    st.markdown("##### Upload Project Data (optional)")
     uploaded_files = st.file_uploader(
         "Upload Project Data (optional)",
         type=["csv"],
         help="You can upload a CSV file with project data to pre-fill the input parameters. The file should have columns: 'Length', 'Width', 'Height', 'Ground Flash Density', 'Construction Coefficient', 'Contents Coefficient', 'Occupancy Coefficient', 'Consequence Coefficient'."
     )
     if uploaded_files:
-        import pandas as pd
         # Read the uploaded CSV file
         df = pd.read_csv(uploaded_files)
         # Check if the required columns are present
@@ -110,14 +110,15 @@ with tabs[0]:
         C_4 = 1.0  # Default occupancy coefficient
         C_5 = 1.0
 
+    st.markdown("---")
+
     # Input parameters
     st.markdown("### Input Parameters")    
     
-    st.markdown("---")
-    st.markdown("#### Structure Dimensions")
-    cols = st.columns(2, vertical_alignment="center")
+    cols = st.columns(2, vertical_alignment="top")
     # Input parameters
     with cols[0]:
+        st.markdown("#### Structure Dimensions")
         l = st.number_input("Length of structure (ft)", min_value=1.0, value=l)
         w = st.number_input("Width of structure (ft)", min_value=1.0, value=w)
         h = st.number_input("Height of structure (ft)", min_value=1.0, value=h)
@@ -127,6 +128,14 @@ with tabs[0]:
             index=0,
             horizontal=True
         )
+        # Convert imperial units to metric
+        l_m = l * 0.3048  # feet to meters
+        w_m = w * 0.3048  # feet to meters
+        h_m = h * 0.3048  # feet to meters
+        # Calculate the collection area (A) in m²
+        A_D = l_m * w_m + 6 * h_m * (l_m + w_m) + 9 * math.pi * h_m * h_m # Collection area in m²
+        st.write(f"**Collection Area:** {A_D:.2f} m²")
+        st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l_m, w_m, h_m, l_m, w_m, h_m, A_D))
         if metric_fig_selection == "Imperial (ft)":
             metric_fig = False
         else:
@@ -216,9 +225,9 @@ with tabs[0]:
     cols = st.columns(2, vertical_alignment="center")
     with cols[0]:
         structure_location_coefficients = {
-            f"Structure surrounded by taller structures or trees within a distance of 3H ({3 * h}m)": 0.25,
-            f"Structure surrounded by structures of equal or lesser height within a distance of 3H ({3 * h}m)": 0.5,
-            f"Isolated structure, with no other structures located within a distance of 3H ({3 * h}m)": 1.0,
+            f"Structure surrounded by taller structures or trees within a distance of 3H ({3 * h}ft)": 0.25,
+            f"Structure surrounded by structures of equal or lesser height within a distance of 3H ({3 * h}ft)": 0.5,
+            f"Isolated structure, with no other structures located within a distance of 3H ({3 * h}ft)": 1.0,
             "Isolated structure on hilltop": 2.0
         }
         C_D = st.selectbox(
@@ -266,18 +275,10 @@ with tabs[0]:
             index=0
         )
         C_5 = lighting_consequence_coefficients[C_5]
-
-    # Convert imperial units to metric
-    l_m = l * 0.3048  # feet to meters
-    w_m = w * 0.3048  # feet to meters
-    h_m = h * 0.3048  # feet to meters
     
     Ng = flash_ranges[Ng]  # Convert selected range to numeric value
     Ng_m2 = Ng * 0.386102  # Convert flashes/sq miles/year to flashes/sq km/year
     
-    # Calculate the collection area (A) in m²
-    A_D = l_m * w_m + 6 * h_m * (l_m + w_m) + 9 * math.pi * h_m * h_m # Collection area in m²
-
     # Calculate the expected annual threat occurrence (N_D)
     N_D = Ng_m2 * A_D * C_D * 10**-6
 
@@ -285,7 +286,7 @@ with tabs[0]:
     C = C_2 * C_3 * C_4 * C_5
     
     # Calculate the tolerable lightning frequency (N_c)
-    N_c = 1.5 * 10**-6 / C
+    N_c = 1.5 * 10**-3 / C
 
     # If N_D <= N_c, a Lightning Protection System (LPS) is optional
     # If N_D > N_c, an LPS is recommended
@@ -323,14 +324,54 @@ with tabs[0]:
     st.markdown("---")
 
     st.header("Results")
+    st.markdown("### Summary of Calculations")
+    st.markdown("---")
+    st.markdown(f"#### Coefficients")
+    cols = st.columns(6)
+    with cols[0]:
+        st.markdown("**Construction Coefficient (C_2)**")
+        st.latex(r"C_2 = {:.2f}".format(C_2))
+    with cols[1]:
+        st.markdown("**Contents Coefficient (C_3)**")
+        st.latex(r"C_3 = {:.2f}".format(C_3))
+    with cols[2]:
+        st.markdown("**Occupancy Coefficient (C_4)**")
+        st.latex(r"C_4 = {:.2f}".format(C_4))
+    with cols[3]:
+        st.markdown("**Consequence Coefficient (C_5)**")
+        st.latex(r"C_5 = {:.2f}".format(C_5))
+    with cols[4]:
+        st.markdown("**Location Coefficient (C_D)**")
+        st.latex(r"C_D = {:.2f}".format(C_D))
+    with cols[5]:
+        st.markdown("**Combined Coefficient (C)**")
+        st.latex(r"C = C_2 \times C_3 \times C_4 \times C_5 =\\ {:.2f} \times {:.2f} \times {:.2f} \times {:.2f} = {:.2f}".format(C_2, C_3, C_4, C_5, C))
+    st.markdown("---")
+    st.markdown(f"#### Dimensions")
+    cols = st.columns(3)
+    with cols[0]:
+        st.write(f"**Length of Structure (l):** {l:.2f} ft ({l_m:.2f} m)")
+        st.latex(r"l = \\{:.2f} \, \text{{ft}} = {:.2f} \, \text{{m}}".format(l, l_m))
+    with cols[1]:
+        st.write(f"**Width of Structure (w):** {w:.2f} ft ({w_m:.2f} m)")
+        st.latex(r"w = \\{:.2f} \, \text{{ft}} = {:.2f} \, \text{{m}}".format(w, w_m))
+    with cols[2]:
+        st.write(f"**Height of Structure (h):** {h:.2f} ft ({h_m:.2f} m)")
+        st.latex(r"h = \\{:.2f} \, \text{{ft}} = {:.2f} \, \text{{m}}".format(h, h_m))
     st.write(f"**Collection Area:** {A_D:.2f} m²")
     st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l_m, w_m, h_m, l_m, w_m, h_m, A_D))
-    st.write(f"**Ground Flash Density:** {Ng_m2:.2f} flashes/km²/year")
-    st.latex(r"N_g = N_{{g,mi^2}} \times 0.386102 =\\ {:.2f} \times 0.386102 = {:.2f}".format(Ng, Ng_m2))
+    st.markdown("---")
+    st.write(f"**Ground Flash Density (Ng):** {Ng} flashes/sq miles/year ({Ng_m2:.2f} flashes/km²/year)")
+    st.latex(r"N_g = \\{:.2f} \, \text{{flashes/sq miles/year}} = {:.2f} \, \text{{flashes/km}}^2/\text{{year}}".format(Ng, Ng_m2))
     st.write(f"**Expected Annual Threat Occurrence:** {N_D:.2e} flashes/year")
     st.latex(r"N_D = N_g \times A \times C_D \times 10^{{-6}} =\\ {:.2f} \times {:.2f} \times {:.2f} \times 10^{{-6}} = {:.6f}".format(Ng_m2, A_D, C_D, N_D))
     st.write(f"**Tolerable Lightning Frequency:** {N_c:.2e} flashes/year")
-    st.latex(r"N_c = \frac{{1.5 \times 10^{{-6}}}}{{C}} =\\ \frac{{1.5 \times 10^{{-6}}}}{{{:.2f}}} = {:.6f}".format(C, N_c))
+    st.latex(r"N_c = \frac{{1.5 \times 10^{{-3}}}}{{C}} = \frac{{1.5 \times 10^{{-3}}}}{{{:.2f}}} = {:.6f}".format(C, N_c))
+
+    if lps_boolean:
+        st.latex(r"N_D \leq N_c \Rightarrow \text{LPS is optional}")
+    else:
+        st.latex(r"N_D > N_c \Rightarrow \text{LPS is recommended}")
 
     st.markdown("---")
 
@@ -358,18 +399,23 @@ with tabs[0]:
     }
     csv_bytes = generate_csv_report(report_data)
     odt_bytes = generate_odt_report(report_data)
-    st.download_button(
-        label="Download CSV Report",
-        data=csv_bytes,
-        file_name="lightning_risk_assessment.csv",
-        mime="text/csv"
-    )
-    st.download_button(
-        label="Download OpenDocument Report",
-        data=odt_bytes,
-        file_name="lightning_risk_assessment.odt",
-        mime="application/vnd.oasis.opendocument.text"
-    )
+
+    now = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
+    cols = st.columns(2)
+    with cols[0]:
+        st.download_button(
+            label="Download CSV Report",
+            data=csv_bytes,
+            file_name=f"{project_name}_lightning_risk_assessment_{now}.csv",
+            mime="text/csv"
+        )
+    with cols[1]:
+        st.download_button(
+            label="Download OpenDocument Report",
+            data=odt_bytes,
+            file_name=f"{project_name}_lightning_risk_assessment_{now}.odt",
+            mime="application/vnd.oasis.opendocument.text"
+        )
 
 with tabs[1]:
     st.subheader("Detailed Assessment")
