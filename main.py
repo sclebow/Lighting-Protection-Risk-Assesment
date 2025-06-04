@@ -28,9 +28,10 @@ st.markdown(
 )
 
 st.title("NFPA 780 Lightning Risk Assessment Calculator")
+st.subheader("Author: Scott Lebow, P.E.")
 
 st.markdown("""
-This app calculates the risk of lightning strikes to a structure based on the NFPA 780 standard.
+This app calculates the risk of lightning strikes to a structure based on the NFPA 780 2026 simplified assessment method.
 """)
 
 tabs = st.tabs(["Simplified Assessment", "Detailed Assessment"])
@@ -225,10 +226,10 @@ with tabs[0]:
     # If N_D > N_c, an LPS is recommended
     if N_D <= N_c:
         lps_boolean = True
-        lps_recommendation = "A Lightning Protection System (LPS) is optional."
+        lps_recommendation = "A Lightning Protection System (LPS) is **optional**."
     else:
         lps_boolean = False
-        lps_recommendation = "A Lightning Protection System (LPS) is recommended."
+        lps_recommendation = "A Lightning Protection System (LPS) is **recommended**."
 
     # Set page background color based on recommendation
     if not lps_boolean:
@@ -253,6 +254,9 @@ with tabs[0]:
             """,
             unsafe_allow_html=True
         )
+
+    st.markdown("---")
+
     st.header("Results")
     st.write(f"**Collection Area:** {A_D:.2f} m²")
     st.latex(r"A = l \times w + 6h(l + w) + 9\pi h^2 = \\{:.2f} \, \text{{m}} \times {:.2f} \, \text{{m}} + 6 \times {:.2f} \, \text{{m}} \, ( {:.2f} \, \text{{m}} + {:.2f} \, \text{{m}} ) + 9\pi \times ( {:.2f} \, \text{{m}} )^2 =\\ {:.2f} \, \text{{m}}^2".format(l, w, h, l, w, h, A_D))
@@ -262,9 +266,26 @@ with tabs[0]:
     st.latex(r"N_D = N_g \times A \times C_D \times 10^{{-6}} =\\ {:.2f} \times {:.2f} \times {:.2f} \times 10^{{-6}} = {:.6f}".format(Ng_m2, A_D, C_D, N_D))
     st.write(f"**Tolerable Lightning Frequency:** {N_c:.2e} flashes/year")
     st.latex(r"N_c = \frac{{1.5 \times 10^{{-6}}}}{{C}} =\\ \frac{{1.5 \times 10^{{-6}}}}{{{:.2f}}} = {:.6f}".format(C, N_c))
+
+    st.markdown("---")
+
     st.markdown(f"## Lightning Protection System Recommendation")
-    st.write(lps_recommendation)
+    st.markdown(lps_recommendation)
     st.markdown("""
-    **Note:** This is a simplified calculator for demonstration. For full compliance, refer to the latest NFPA 780 standard and use all required coefficients and factors.
+    **Note:** This is the simplified assessment based on the NFPA 780 standard. For a detailed assessment, please refer to the detailed assessment tab.
     """)
 
+with tabs[1]:
+    st.subheader("Detailed Assessment")
+
+    st.markdown("""
+    This section provides a detailed assessment of lightning risk based on the NFPA 780 standard.
+    It includes additional parameters and calculations for a more comprehensive evaluation.
+    """)
+
+    st.markdown("---")
+
+    st.markdown("### Coming Soon")
+    st.markdown("""
+    The detailed assessment section is under development. Please check back later for updates.
+    """)
