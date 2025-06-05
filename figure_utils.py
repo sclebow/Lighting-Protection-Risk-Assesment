@@ -154,6 +154,13 @@ def create_building_collection_figure(l, w, h, metric=True):
         zaxis_title = 'Height (ft)'
 
     fig.update_layout(
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=.9,
+            xanchor="center",
+            x=0.5
+        ),
         scene=dict(
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
@@ -163,10 +170,10 @@ def create_building_collection_figure(l, w, h, metric=True):
             zaxis=dict(range=list(z_range)),
             aspectmode='cube',
             camera=dict(
-                eye=dict(x=1.5, y=1.5, z=1.2)  # Zoomed out a bit more
+                eye=dict(x=1.5, y=1.5, z=1.2)
             ),
         ),
-        title='Interactive 3D Model: Building and Collection Area',
+        # title='Interactive 3D Model: Building and Collection Area',
         margin=dict(l=0, r=0, b=0, t=30)
     )
     return fig
